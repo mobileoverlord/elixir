@@ -356,30 +356,15 @@ defmodule Mix.Release do
   @doc """
   Copies the cookie to the given path.
 
-  If a cookie option was given, we compare it with
-  the contents of the file (if any), and ask the user
-  if they want to override.
-
-  If there is no option, we generate a random one
-  the first time.
+  The release cookie is compared with the contents of the file (if any).
+  If the cookie at the path is different, the user is asked if they want
+  to overwrite the cookie.
   """
   @spec make_cookie(t, Path.t()) :: :ok
   def make_cookie(release, path) do
-    cond do
-      cookie = release.options[:cookie] ->
-        Mix.Generator.create_file(path, cookie, quiet: true)
-        :ok
-
-      File.exists?(path) ->
-        :ok
-
-      true ->
-        File.write!(path, random_cookie())
-        :ok
-    end
+    Mix.Generator.create_file(path, release.options[:cookie], quiet: true)
+    :ok
   end
-
-  defp random_cookie, do: Base.url_encode64(:crypto.strong_rand_bytes(40))
 
   @doc """
   Makes the start_erl.data file with the

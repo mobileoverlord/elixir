@@ -893,6 +893,9 @@ defmodule Mix.Tasks.Release do
         {_, _} -> Mix.raise("Expected \"mix release\" or \"mix release NAME\"")
       end
 
+    cookie = make_cookie(release, cookie_path(release))
+    release = %{release | options: Keyword.put(release.options, :cookie, cookie)}
+
     if not File.exists?(release.version_path) or
          yes?(release, "Release #{release.name}-#{release.version} already exists. Overwrite?") do
       run_steps(release)
@@ -989,8 +992,8 @@ defmodule Mix.Tasks.Release do
 
     release = maybe_add_config_reader_provider(release, version_path)
     vm_args_path = Path.join(version_path, "vm.args")
-    cookie_path = Path.join(release.path, "releases/COOKIE")
     start_erl_path = Path.join(release.path, "releases/start_erl.data")
+    cookie_path = cookie_path(release)
     config_provider_path = {:system, "RELEASE_SYS_CONFIG", ".config"}
 
     with :ok <- make_boot_scripts(release, version_path, consolidation_path),
@@ -1071,6 +1074,23 @@ defmodule Mix.Tasks.Release do
     end
 
     :ok
+  end
+
+  defp make_cookie(release, path) do
+    cond do
+      cookie = release.options[:cookie] ->
+        cookie
+
+      File.exists?(path) ->
+        File.read!(path)
+
+      true ->
+        Base.url_encode64(:crypto.strong_rand_bytes(40))
+    end
+  end
+
+  defp cookie_path(release) do
+    Path.join(release.path, "releases/COOKIE")
   end
 
   defp announce(release) do
